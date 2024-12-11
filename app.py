@@ -22,6 +22,16 @@ def comprimir_imagem(imagem, qualidade=85):
     buffer.seek(0)
     return Image.open(buffer)
 
+def recortar_area_placa(imagem):
+    """Recorta a região da placa na imagem (abaixo da faixa azul e à direita do 'BR')."""
+    largura, altura = imagem.size
+    # Ajustar os valores de corte conforme necessário
+    faixa_superior = int(altura * 0.3)  # 30% da altura a partir do topo
+    faixa_inferior = int(altura * 0.7)  # 70% da altura
+    faixa_esquerda = int(largura * 0.1)  # 10% da largura a partir da esquerda
+    faixa_direita = int(largura * 0.9)  # 90% da largura
+    return imagem.crop((faixa_esquerda, faixa_superior, faixa_direita, faixa_inferior))
+
 def processar_imagem(imagem):
     """Processa a imagem para extrair texto usando EasyOCR."""
     reader = easyocr.Reader(['en', 'pt'])  # Configura os idiomas do OCR
@@ -54,9 +64,13 @@ if uploaded_file:
     imagem = comprimir_imagem(imagem)
     st.image(imagem, caption="Imagem enviada", use_container_width=True)
 
+    # Recortar a área da placa
+    imagem_recortada = recortar_area_placa(imagem)
+    st.image(imagem_recortada, caption="Área da placa recortada", use_container_width=True)
+
     # Processamento da imagem
     try:
-        results = processar_imagem(imagem)
+        results = processar_imagem(imagem_recortada)
         st.write(f"Texto extraído: {', '.join(results)}")
 
         # Filtragem para encontrar a placa válida
@@ -65,7 +79,7 @@ if uploaded_file:
             st.success(f"Placa reconhecida: {placa}")
 
             # Gerar thumbnail
-            thumbnail = imagem.resize((100, 50))
+            thumbnail = imagem_recortada.resize((100, 50))
             thumbnail_buffer = BytesIO()
             thumbnail.save(thumbnail_buffer, format="JPEG")
             thumbnail_bytes = thumbnail_buffer.getvalue()
