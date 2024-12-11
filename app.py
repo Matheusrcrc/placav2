@@ -5,46 +5,34 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from PIL import Image
-import requests
-from io import BytesIO
 import re
+from io import BytesIO
 
 # Configurações iniciais
-st.set_page_config(page_title="Reconhecimento de Placas", layout="wide")
+st.set_page_config(page_title="Reconhecimento de Placas", layout="wide", initial_sidebar_state="expanded")
 st.title("Reconhecimento de Placas Mercosul")
 
 # Inicialização da tabela de dados
 if "placas" not in st.session_state:
-    st.session_state["placas"] = pd.DataFrame(columns=["Timestamp", "Número da Placa", "Thumbnail", "Informações do Veículo"])
+    st.session_state["placas"] = pd.DataFrame(columns=["Timestamp", "Número da Placa", "Thumbnail"])
 
 def processar_imagem(imagem):
     """Processa a imagem para extrair texto usando OCR."""
     imagem_cinza = cv2.cvtColor(np.array(imagem), cv2.COLOR_BGR2GRAY)
-    texto_extraido = pytesseract.image_to_string(imagem_cinza, config="--psm 8")
-    return texto_extraido
+    # Testar diferentes valores de --psm para melhor precisão
+    psm_options = [6, 8, 11]  # Exemplos de modos de segmentação de página
+    for psm in psm_options:
+        texto_extraido = pytesseract.image_to_string(imagem_cinza, config=f"--psm {psm}")
+        if texto_extraido.strip():
+            return texto_extraido
+    return ""
 
-def buscar_dados_veiculo(placa):
-    """Busca informações do veículo utilizando uma API pública."""
-    url_api = f"https://api.consultarplaca.com.br/v2/vehicles/{placa}"
-    headers = {
-        "Authorization": "Bearer SEU_TOKEN_AQUI"
-    }
-    try:
-        resposta = requests.get(url_api, headers=headers)
-        if resposta.status_code == 200:
-            return resposta.json()
-        else:
-            return "Dados não encontrados."
-    except Exception as e:
-        return f"Erro ao buscar informações: {e}"
-
-def salvar_dados(timestamp, placa, thumbnail, informacoes):
+def salvar_dados(timestamp, placa, thumbnail):
     """Salva os dados na tabela."""
     nova_linha = {
         "Timestamp": timestamp,
         "Número da Placa": placa,
-        "Thumbnail": thumbnail,
-        "Informações do Veículo": informacoes
+        "Thumbnail": thumbnail
     }
     st.session_state["placas"] = pd.concat([st.session_state["placas"], pd.DataFrame([nova_linha])], ignore_index=True)
 
@@ -70,12 +58,9 @@ if uploaded_file:
         thumbnail.save(thumbnail_buffer, format="JPEG")
         thumbnail_bytes = thumbnail_buffer.getvalue()
 
-        # Buscar informações do veículo
-        informacoes = buscar_dados_veiculo(placa)
-
         # Salvar os dados
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        salvar_dados(timestamp, placa, thumbnail_bytes, informacoes)
+        salvar_dados(timestamp, placa, thumbnail_bytes)
     else:
         st.error("Nenhuma placa válida foi encontrada na imagem.")
 
