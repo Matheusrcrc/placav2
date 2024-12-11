@@ -19,7 +19,15 @@ def processar_imagem(imagem):
     """Processa a imagem para extrair texto usando EasyOCR."""
     reader = easyocr.Reader(['en', 'pt'])  # Configura os idiomas do OCR
     results = reader.readtext(np.array(imagem), detail=0)
-    return " ".join(results)
+    return results
+
+def filtrar_placa(results):
+    """Filtra o texto para identificar apenas o padrão de placa Mercosul."""
+    padrao_placa = r"[A-Z]{3}\d{1}[A-Z]{1}\d{2}"
+    for text in results:
+        if re.match(padrao_placa, text):
+            return text
+    return None
 
 def salvar_dados(timestamp, placa, thumbnail):
     """Salva os dados na tabela."""
@@ -38,13 +46,12 @@ if uploaded_file:
 
     # Processamento da imagem
     try:
-        texto_extraido = processar_imagem(imagem)
-        st.write(f"Texto extraído: {texto_extraido}")
+        results = processar_imagem(imagem)
+        st.write(f"Texto extraído: {', '.join(results)}")
 
-        # Verificação de padrão de placa Mercosul
-        padrao_placa = r"[A-Z]{3}\d{1}[A-Z]{1}\d{2}"
-        if re.match(padrao_placa, texto_extraido.strip()):
-            placa = texto_extraido.strip()
+        # Filtragem para encontrar a placa válida
+        placa = filtrar_placa(results)
+        if placa:
             st.success(f"Placa reconhecida: {placa}")
 
             # Gerar thumbnail
