@@ -12,6 +12,10 @@ from io import BytesIO
 st.set_page_config(page_title="Reconhecimento de Placas", layout="wide", initial_sidebar_state="expanded")
 st.title("Reconhecimento de Placas Mercosul")
 
+# Configuração do caminho do Tesseract (ajuste conforme seu sistema)
+pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'  # Windows
+# Exemplo para Linux: /usr/bin/tesseract
+
 # Inicialização da tabela de dados
 if "placas" not in st.session_state:
     st.session_state["placas"] = pd.DataFrame(columns=["Timestamp", "Número da Placa", "Thumbnail"])
@@ -40,7 +44,7 @@ def salvar_dados(timestamp, placa, thumbnail):
 uploaded_file = st.file_uploader("Envie uma imagem da placa:", type=["jpg", "jpeg", "png"])
 if uploaded_file:
     imagem = Image.open(uploaded_file)
-    st.image(imagem, caption="Imagem enviada", use_column_width=True)
+    st.image(imagem, caption="Imagem enviada", use_container_width=True)
 
     # Processamento da imagem
     texto_extraido = processar_imagem(imagem)
