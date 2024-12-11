@@ -4,4 +4,3 @@ pytesseract
 pandas
 numpy
 pillow
-requests
