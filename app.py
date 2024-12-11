@@ -15,6 +15,13 @@ st.title("Reconhecimento de Placas Mercosul")
 if "placas" not in st.session_state:
     st.session_state["placas"] = pd.DataFrame(columns=["Timestamp", "Número da Placa", "Thumbnail"])
 
+def comprimir_imagem(imagem, qualidade=85):
+    """Comprime a imagem para melhorar o desempenho."""
+    buffer = BytesIO()
+    imagem.save(buffer, format="JPEG", optimize=True, quality=qualidade)
+    buffer.seek(0)
+    return Image.open(buffer)
+
 def processar_imagem(imagem):
     """Processa a imagem para extrair texto usando EasyOCR."""
     reader = easyocr.Reader(['en', 'pt'])  # Configura os idiomas do OCR
@@ -42,6 +49,9 @@ def salvar_dados(timestamp, placa, thumbnail):
 uploaded_file = st.file_uploader("Envie uma imagem da placa:", type=["jpg", "jpeg", "png"])
 if uploaded_file:
     imagem = Image.open(uploaded_file)
+
+    # Comprimir imagem
+    imagem = comprimir_imagem(imagem)
     st.image(imagem, caption="Imagem enviada", use_container_width=True)
 
     # Processamento da imagem
